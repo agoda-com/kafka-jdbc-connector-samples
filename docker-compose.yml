@@ -1,0 +1,35 @@
+version: '2'
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    ports:
+      - "2181:2181"
+  kafka:
+    image: wurstmeister/kafka:0.9.0.0
+    ports:
+      - "9092:9092"
+    links:
+      - zookeeper:zookeeper
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "change-tracker-config:1:1,change-tracker-offset:1:1,test-timestamp:1:1,test-incrementing:1:1,test-timestamp-incrementing:1:1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  mssql:
+    image: microsoft/mssql-server-linux:latest
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: Passw0rd
+  connect-mssql:
+    image: com.agoda/kafka-connect-mssql:latest
+    ports:
+      - "8083:8083"
+    links:
+      - kafka:kafka
+      - mssql:mssql
+    environment:
+      CONFIG_FILE: functional-test.conf

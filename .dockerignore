@@ -1,0 +1,9 @@
+# IDE specific
+.idea/
+
+# SBT specific
+target/
+*/target/
+
+# Logger specific
+logs/
