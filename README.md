@@ -3,6 +3,23 @@ Kafka JDBC Connector Samples
 
 Sample projects using Kafka JDBC Connector.
 
+Install and Run
+---------------
+
+Add following entry in `/etc/hosts` file
+
+```
+127.0.0.1	kafka
+```
+
+Run following commands form the terminal
+
+```sh
+sbt docker
+docker-compose up -d
+sbt functional/test
+```
+
 License
 -------
 
