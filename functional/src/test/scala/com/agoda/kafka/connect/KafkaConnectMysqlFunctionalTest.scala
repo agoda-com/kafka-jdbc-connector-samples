@@ -18,7 +18,7 @@ import scala.concurrent.duration.{Duration, DurationDouble}
 import scala.language.postfixOps
 import scalaj.http.Http
 
-class KafkaConnectMssqlFunctionalTest extends WordSpec with Matchers with BeforeAndAfterAll {
+class KafkaConnectMysqlFunctionalTest extends WordSpec with Matchers with BeforeAndAfterAll {
   var db: Connection = _
   var publisherTimestamp: Publisher[ConsumerRecord[String, String]] = _
   var publisherIncrementing: Publisher[ConsumerRecord[String, String]] = _
@@ -32,11 +32,11 @@ class KafkaConnectMssqlFunctionalTest extends WordSpec with Matchers with Before
       val url = "http://localhost:8083/connectors"
       val data = """
                   |{
-                  |	"name" : "timestamp_mssql",
+                  |	"name" : "timestamp_mysql",
                   |	"config" : {
                   |		"tasks.max": "1",
                   |		"connector.class": "com.agoda.kafka.connector.jdbc.JdbcSourceConnector",
-                  |		"connection.url" : "jdbc:sqlserver://mssql:1433;databaseName=tempdb;user=sa;password=Passw0rd",
+                  |		"connection.url" : "jdbc:mysql://mysql:3306/tempdb?user=root&password=Passw0rd",
                   |		"batch.max.rows.variable.name" : "batch",
                   |		"batch.max.rows" : "2",
                   |		"mode" : "timestamp",
@@ -44,7 +44,7 @@ class KafkaConnectMssqlFunctionalTest extends WordSpec with Matchers with Before
                   |		"timestamp.field.name" : "change_timestamp",
                   |		"timestamp.offset" : "2017-03-13 05:33:57.000",
                   |		"stored-procedure.name" : "sp_cdc_timestamp",
-                  |		"topic" : "test-timestamp-mssql",
+                  |		"topic" : "test-timestamp-mysql",
                   |		"key.field.name" : "id"
                   |	}
                   |}""".stripMargin
@@ -75,11 +75,11 @@ class KafkaConnectMssqlFunctionalTest extends WordSpec with Matchers with Before
       val url = "http://localhost:8083/connectors"
       val data = """
                   |{
-                  |	"name" : "incrementing_mssql",
+                  |	"name" : "incrementing_mysql",
                   |	"config" : {
                   |		"tasks.max": "1",
                   |		"connector.class": "com.agoda.kafka.connector.jdbc.JdbcSourceConnector",
-                  |		"connection.url" : "jdbc:sqlserver://mssql:1433;databaseName=tempdb;user=sa;password=Passw0rd",
+                  |		"connection.url" : "jdbc:mysql://mysql:3306/tempdb?user=root&password=Passw0rd",
                   |		"batch.max.rows.variable.name" : "batch",
                   |		"batch.max.rows" : "2",
                   |		"mode" : "incrementing",
@@ -87,7 +87,7 @@ class KafkaConnectMssqlFunctionalTest extends WordSpec with Matchers with Before
                   |		"incrementing.field.name" : "id",
                   |		"incrementing.offset" : "7",
                   |		"stored-procedure.name" : "sp_cdc_incrementing",
-                  |		"topic" : "test-incrementing-mssql",
+                  |		"topic" : "test-incrementing-mysql",
                   |		"key.field.name" : "id"
                   |	}
                   |}""".stripMargin
@@ -116,11 +116,11 @@ class KafkaConnectMssqlFunctionalTest extends WordSpec with Matchers with Before
       val url = "http://localhost:8083/connectors"
       val data = """
                    |{
-                   |	"name" : "timestamp_incrementing_mssql",
+                   |	"name" : "timestamp_incrementing_mysql",
                    |	"config" : {
                    |		"tasks.max": "1",
                    |		"connector.class": "com.agoda.kafka.connector.jdbc.JdbcSourceConnector",
-                   |		"connection.url" : "jdbc:sqlserver://mssql:1433;databaseName=tempdb;user=sa;password=Passw0rd",
+                   |		"connection.url" : "jdbc:mysql://mysql:3306/tempdb?user=root&password=Passw0rd",
                    |		"batch.max.rows.variable.name" : "batch",
                    |		"batch.max.rows" : "2",
                    |		"mode" : "timestamp+incrementing",
@@ -131,7 +131,7 @@ class KafkaConnectMssqlFunctionalTest extends WordSpec with Matchers with Before
                    |		"incrementing.field.name" : "id",
                    |		"incrementing.offset" : "3",
                    |		"stored-procedure.name" : "sp_cdc_timestamp_incrementing",
-                   |		"topic" : "test-timestamp-incrementing-mssql",
+                   |		"topic" : "test-timestamp-incrementing-mysql",
                    |		"key.field.name" : "id"
                    |	}
                    |}""".stripMargin
@@ -159,84 +159,58 @@ class KafkaConnectMssqlFunctionalTest extends WordSpec with Matchers with Before
     }
   }
 
-  lazy private val dropTable   = db.prepareStatement("DROP TABLE IF EXISTS dbo.test")
-  lazy private val createTable = db.prepareStatement("CREATE TABLE test (id INT, change_timestamp DATETIME)")
+  lazy private val dropTable   = db.prepareStatement("DROP TABLE IF EXISTS TEST")
+  lazy private val createTable = db.prepareStatement("CREATE TABLE TEST (id INT, change_timestamp TIMESTAMP)")
   lazy private val insertData  = db.prepareStatement(
-    """
-      |INSERT INTO TEST VALUES(1,  ?);
-      |INSERT INTO TEST VALUES(2,  ?);
-      |INSERT INTO TEST VALUES(3,  ?);
-      |INSERT INTO TEST VALUES(4,  ?);
-      |INSERT INTO TEST VALUES(5,  ?);
-      |INSERT INTO TEST VALUES(6,  ?);
-      |INSERT INTO TEST VALUES(7,  ?);
-      |INSERT INTO TEST VALUES(8,  ?);
-      |INSERT INTO TEST VALUES(9,  ?);
-      |INSERT INTO TEST VALUES(10, ?);
-      |""".stripMargin
+    "INSERT INTO TEST (id, change_timestamp) VALUES(1,  ?),(2,  ?),(3,  ?),(4,  ?),(5,  ?),(6,  ?),(7,  ?),(8,  ?),(9,  ?),(10, ?);"
   )
-  lazy private val dropTimestampProcedure = db.prepareStatement(
-    """
-      |IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'sp_cdc_timestamp') AND type in (N'P', N'PC'))
-      | DROP PROCEDURE sp_cdc_timestamp
-    """.stripMargin
-  )
+  lazy private val dropTimestampProcedure = db.prepareStatement("DROP PROCEDURE IF EXISTS sp_cdc_timestamp")
   lazy private val createTimestampProcedure = db.prepareStatement(
     """
-      |CREATE PROCEDURE sp_cdc_timestamp (@time DATETIME, @batch INT)
-      |AS
+      |CREATE PROCEDURE sp_cdc_timestamp (IN _time TIMESTAMP, IN _batch INT)
       |BEGIN
-      |	SELECT TOP (@batch) *
-      |	FROM tempdb.dbo.test
-      |	WHERE change_timestamp > @time
+      |	SELECT *
+      |	FROM tempdb.TEST
+      |	WHERE change_timestamp > _time
       |	ORDER BY change_timestamp ASC
-      |END
+      | LIMIT _batch;
+      |END;
     """.stripMargin
   )
-  lazy private val dropIncrementingProcedure = db.prepareStatement(
-    """
-      |IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'sp_cdc_incrementing') AND type in (N'P', N'PC'))
-      | DROP PROCEDURE sp_cdc_incrementing
-    """.stripMargin
-  )
+  lazy private val dropIncrementingProcedure = db.prepareStatement("DROP PROCEDURE IF EXISTS sp_cdc_incrementing")
   lazy private val createIncrementingProcedure = db.prepareStatement(
     """
-      |CREATE PROCEDURE sp_cdc_incrementing (@id BIGINT, @batch INT)
-      |AS
+      |CREATE PROCEDURE sp_cdc_incrementing (IN _id BIGINT, IN _batch INT)
       |BEGIN
-      |	SELECT TOP (@batch) *
-      |	FROM tempdb.dbo.test
-      |	WHERE id > @id
+      |	SELECT *
+      |	FROM tempdb.TEST
+      |	WHERE id > _id
       |	ORDER BY id ASC
-      |END
+      | LIMIT _batch;
+      |END;
     """.stripMargin
   )
-  lazy private val dropTimestampIncrementingProcedure = db.prepareStatement(
-    """
-      |IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'sp_cdc_timestamp_incrementing') AND type in (N'P', N'PC'))
-      | DROP PROCEDURE sp_cdc_timestamp_incrementing
-    """.stripMargin
-  )
+  lazy private val dropTimestampIncrementingProcedure = db.prepareStatement("DROP PROCEDURE IF EXISTS sp_cdc_timestamp_incrementing")
   lazy private val createTimestampIncrementingProcedure = db.prepareStatement(
     """
-      |CREATE PROCEDURE sp_cdc_timestamp_incrementing (@time DATETIME, @id BIGINT, @batch INT)
-      |AS
+      |CREATE PROCEDURE sp_cdc_timestamp_incrementing (_time TIMESTAMP, _id BIGINT, _batch INT)
       |BEGIN
-      |	SELECT TOP (@batch) *
-      |	FROM tempdb.dbo.test
+      |	SELECT *
+      |	FROM tempdb.TEST
       |	WHERE
-      |		(change_timestamp > @time)
+      |		(change_timestamp > _time)
       |		OR
-      |		(change_timestamp = @time AND id > @id)
+      |		(change_timestamp = _time AND id > _id)
       |	ORDER BY change_timestamp, id ASC
-      |END
+      | LIMIT _batch;
+      |END;
     """.stripMargin
   )
   lazy private val kafka        = new ReactiveKafka()
   lazy private val deserializer = new StringDeserializer()
 
   override def beforeAll(): Unit = {
-    val dbUrl = "jdbc:sqlserver://localhost:1433;databaseName=tempdb;user=sa;password=Passw0rd"
+    val dbUrl = "jdbc:mysql://localhost:3306/tempdb?user=root&password=Passw0rd"
     db = DriverManager.getConnection(dbUrl)
     val UTC_Calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
     insertData.setTimestamp(1,  new Timestamp(1489383225000L), UTC_Calendar)
@@ -259,9 +233,9 @@ class KafkaConnectMssqlFunctionalTest extends WordSpec with Matchers with Before
     dropTimestampIncrementingProcedure.execute()
     createTimestampIncrementingProcedure.execute()
 
-    publisherTimestamp             = kafka.consume(ConsumerProperties("kafka:9092", "test-timestamp-mssql", "functional-test-mssql", deserializer, deserializer))
-    publisherIncrementing          = kafka.consume(ConsumerProperties("kafka:9092", "test-incrementing-mssql", "functional-test-mssql", deserializer, deserializer))
-    publisherTimestampIncrementing = kafka.consume(ConsumerProperties("kafka:9092", "test-timestamp-incrementing-mssql", "functional-test-mssql", deserializer, deserializer))
+    publisherTimestamp             = kafka.consume(ConsumerProperties("kafka:9092", "test-timestamp-mysql", "functional-test-mysql", deserializer, deserializer))
+    publisherIncrementing          = kafka.consume(ConsumerProperties("kafka:9092", "test-incrementing-mysql", "functional-test-mysql", deserializer, deserializer))
+    publisherTimestampIncrementing = kafka.consume(ConsumerProperties("kafka:9092", "test-timestamp-incrementing-mysql", "functional-test-mysql", deserializer, deserializer))
   }
 
   override def afterAll(): Unit = db.close()

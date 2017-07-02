@@ -1,7 +1,7 @@
-lazy val `kafka-connect-mssql` =
-  (project in file("kafka-connect-mssql"))
+lazy val `kafka-connect` =
+  (project in file("kafka-connect"))
     .settings(
-      name := "kafka-connect-mssql",
+      name := "kafka-connect",
       organization := "com.agoda",
       version := "1.0.0",
       scalaVersion := "2.11.8",
