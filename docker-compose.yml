@@ -38,5 +38,6 @@ services:
     links:
       - kafka:kafka
       - mssql:mssql
+      - mysql:mysql
     environment:
       CONFIG_FILE: functional-test.conf
