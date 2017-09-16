@@ -14,14 +14,19 @@ object Dependencies {
   private val ScalaTest           = "org.scalatest"                  %% "scalatest"             % ScalaTestV   % "test"
   private val ReactiveKafka       = "com.softwaremill.reactivekafka" %% "reactive-kafka-core"   % "0.10.0"     % "test"
   private val ScalaJHttp          = "org.scalaj"                     %% "scalaj-http"           % "2.3.0"      % "test"
-  private val MysqlDriver         = "mysql"                           % "mysql-connector-java"  % "6.0.6"      % "test"
-  private val MssqlDriver         = "com.microsoft.sqlserver"         % "mssql-jdbc"            % "6.1.0.jre8" % "test"
+  private val MysqlDriver         = "mysql"                           % "mysql-connector-java"  % "6.0.6"
+  private val MssqlDriver         = "com.microsoft.sqlserver"         % "mssql-jdbc"            % "6.1.0.jre8"
 
   object Compile {
-    def kafkaConnect = Seq(Logback, ScalaLogging, KafkaJdbcConnector, AkkaActor, KafkaConnectRuntime, KafkaConnectJson)
+    def kafkaConnect = Seq(
+      Logback, ScalaLogging, KafkaJdbcConnector, AkkaActor, KafkaConnectRuntime,
+      KafkaConnectJson, MysqlDriver, MssqlDriver
+    )
   }
 
   object Test {
-    def functional = Seq(Scalatics, ScalaTest, MysqlDriver, MssqlDriver, ScalaJHttp, ReactiveKafka)
+    def functional = Seq(
+      Scalatics, ScalaTest, MysqlDriver, MssqlDriver, ScalaJHttp, ReactiveKafka
+    )
   }
 }
