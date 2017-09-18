@@ -26,7 +26,8 @@ object Dependencies {
 
   object Test {
     def functional = Seq(
-      Scalatics, ScalaTest, MysqlDriver, MssqlDriver, ScalaJHttp, ReactiveKafka
+      Logback, ScalaLogging, Scalatics, ScalaTest, MysqlDriver, MssqlDriver,
+      ScalaJHttp, ReactiveKafka
     )
   }
 }
